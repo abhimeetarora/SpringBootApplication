@@ -11,6 +11,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -78,8 +79,10 @@ if(emp.getDepartment()!=null)
         UpdateDTO dto=new UpdateDTO(saved.getName(),saved.getEmail(),saved.getSalary());
         return dto;
     }
+   @PreAuthorize("hasRole('ADMIN')")
     public void deleteEmployee(Long id)
     {
+
         employeeRepo.deleteById(id);
     }
     @Transactional

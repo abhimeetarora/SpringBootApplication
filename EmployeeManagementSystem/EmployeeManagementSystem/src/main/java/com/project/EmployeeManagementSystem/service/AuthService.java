@@ -1,6 +1,7 @@
 package com.project.EmployeeManagementSystem.service;
 
 import com.project.EmployeeManagementSystem.dto.LoginDTO;
+import com.project.EmployeeManagementSystem.exception.ResourceNotFoundException;
 import com.project.EmployeeManagementSystem.model.User;
 import com.project.EmployeeManagementSystem.repository.UserRepo;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -31,5 +32,9 @@ public class AuthService {
     {
         Authentication authentication=authenticationManager.authenticate( new UsernamePasswordAuthenticationToken(dto.username(),dto.password()));
         return  jwtService.generateToken(dto.username());
+    }
+    public User getUser(Long id)
+    {
+        return userRepo.findById(id).orElseThrow(()->new ResourceNotFoundException("id not found"));
     }
 }
