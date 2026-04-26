@@ -24,7 +24,7 @@ public class SecurityConfig {
     {
         return  httpSecurity.csrf(csrf->csrf.disable()).sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-        ).authorizeHttpRequests(auth->auth.requestMatchers("/auth/**").permitAll().anyRequest().authenticated()).addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class).build();
+        ).authorizeHttpRequests(auth->auth.requestMatchers("/auth/**", "/chat/**").permitAll().anyRequest().authenticated()).addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class).build();
     }
     @Bean
     public BCryptPasswordEncoder bCryptPasswordEncoder()
