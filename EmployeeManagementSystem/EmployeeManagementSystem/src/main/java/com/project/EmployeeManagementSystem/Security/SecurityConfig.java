@@ -20,8 +20,7 @@ public class SecurityConfig {
         this.jwtFilter=jwtFilter;
     }
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity)
-    {
+    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         return  httpSecurity.csrf(csrf->csrf.disable()).sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
         ).authorizeHttpRequests(auth->auth.requestMatchers("/auth/**", "/chat/**").permitAll().anyRequest().authenticated()).addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class).build();
@@ -32,8 +31,7 @@ public class SecurityConfig {
         return  new BCryptPasswordEncoder();
     }
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration)
-    {
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
         return authenticationConfiguration.getAuthenticationManager();
     }
 }

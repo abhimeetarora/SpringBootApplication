@@ -7,6 +7,7 @@ import com.project.EmployeeManagementSystem.repository.UserRepo;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -31,7 +32,7 @@ public class AuthService {
     public String login(LoginDTO dto)
     {
         Authentication authentication=authenticationManager.authenticate( new UsernamePasswordAuthenticationToken(dto.username(),dto.password()));
-        return  jwtService.generateToken(dto.username());
+        return  jwtService.generateToken((UserDetails) authentication.getPrincipal());
     }
     public User getUser(Long id)
     {

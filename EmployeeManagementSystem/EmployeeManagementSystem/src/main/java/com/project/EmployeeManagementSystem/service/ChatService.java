@@ -2,6 +2,8 @@ package com.project.EmployeeManagementSystem.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.project.EmployeeManagementSystem.dto.EmployeeDTO;
+import com.project.EmployeeManagementSystem.exception.ResourceNotFoundException;
 import com.project.EmployeeManagementSystem.model.Employee;
 import com.project.EmployeeManagementSystem.repository.EmployeeRepo;
 import org.springframework.beans.factory.annotation.Value;
@@ -10,14 +12,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class ChatService {
 
     private final EmployeeRepo employeeRepo;
+    private final EmployeeService employeeService;
 
-    public ChatService(EmployeeRepo employeeRepo) {
+    public ChatService(EmployeeRepo employeeRepo, EmployeeService employeeService) {
         this.employeeRepo = employeeRepo;
+        this.employeeService=employeeService;
     }
 
     @Value("${groq.api.key}")
@@ -29,25 +34,37 @@ public class ChatService {
     private final List<Map<String, String>> conversation = new ArrayList<>();
     public String getResponse(String prompt) {
 
-        if (prompt.toLowerCase().contains("salary")) {
+        String lower = prompt.toLowerCase();
+        if (lower.contains("each") || lower.contains("all")) {
+            return formatAllEmployees(employeeService.getAllEmployees());
+        }
+        if (lower.contains("salary")) {
+            return handleSalary(prompt);
+        }
 
-            String reply = handleSalaryQuery(prompt);
 
-            conversation.add(Map.of(
-                    "role", "user",
-                    "content", prompt
-            ));
+        if (lower.contains("details") || lower.contains("info")) {
+            return handleEmployeeDetails(prompt);
+        }
 
-            conversation.add(Map.of(
-                    "role", "assistant",
-                    "content", reply
-            ));
-
-            return reply;
+        if (lower.contains("all employees") || lower.contains("list")) {
+            return handleAllEmployees();
         }
 
         return callAI(prompt);
     }
+
+    private String formatAllEmployees(List<EmployeeDTO> allEmployees) {
+        if (allEmployees.isEmpty())
+            return "no employee found";
+        StringBuilder sb=new StringBuilder();
+        for(EmployeeDTO dto:allEmployees)
+        {
+            sb.append("name: ").append(dto.getName()).append("email: ").append(dto.getEmail()).append("\n");
+        }
+        return sb.toString();
+    }
+
 
     private String callAI(String prompt) {
 
@@ -107,7 +124,7 @@ public class ChatService {
             return "Error parsing response";
         }
     }
-    private String handleSalaryQuery(String prompt) {
+    private String handleSalary(String prompt) {
 
         String number = prompt.replaceAll("[^0-9]", "");
 
@@ -118,8 +135,61 @@ public class ChatService {
         Long id = Long.parseLong(number);
 
         Employee emp = employeeRepo.findById(id)
-                .orElseThrow(() -> new RuntimeException("Employee not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found enter a valid Id"));
 
-        return "Salary of " + emp.getName() + " is " + emp.getSalary();
+        String reply = "Salary of " + emp.getName() + " is " + emp.getSalary();
+
+        saveToConversation(prompt, reply);
+
+        return reply;
+    }
+    private String handleEmployeeDetails(String prompt) {
+
+        String number = prompt.replaceAll("[^0-9]", "");
+
+        if (number.isEmpty()) {
+            return "Please provide a valid employee ID.";
+        }
+
+        Long id = Long.parseLong(number);
+
+        Employee emp = employeeRepo.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Employee Details not found"));
+
+        String reply = """
+            Employee Details:
+            Name: %s
+            Salary: %s
+            """.formatted(emp.getName(), emp.getSalary());
+
+        saveToConversation(prompt, reply);
+
+        return reply;
+    }
+    private String handleAllEmployees() {
+
+        List<Employee> employees = employeeRepo.findAll();
+
+        if (employees.isEmpty()) {
+            return "No employees found.";
+        }
+
+        StringBuilder sb = new StringBuilder("Employees:\n");
+
+        for (Employee e : employees) {
+            sb.append("ID: ").append(e.getId())
+                    .append(", Name: ").append(e.getName())
+                    .append("\n");
+        }
+
+        String reply = sb.toString();
+
+        saveToConversation("list employees", reply);
+
+        return reply;
+    }
+    private void saveToConversation(String user, String reply) {
+        conversation.add(Map.of("role", "user", "content", user));
+        conversation.add(Map.of("role", "assistant", "content", reply));
     }
 }
